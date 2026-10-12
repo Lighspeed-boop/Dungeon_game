@@ -14,6 +14,10 @@ rooms = [
     "Dungeon Floor 3",
     "Dungeon Exit",
     "Main Hall Floor 1"
+    "Main Hall floor 2"
+    "Main Hall floor 3"
+    "Guarded doors"
+    "Throne room"
 ]
 
 

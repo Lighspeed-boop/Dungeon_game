@@ -5,9 +5,7 @@ from pathlib import Path
 
 rooms_cleared = 0
 current_gold = 0
-directions = []
 game_over = False
-
 
 rooms = [
     "The Entrance",
@@ -15,49 +13,62 @@ rooms = [
     "Dungeon Floor 2",
     "Dungeon Floor 3",
     "Dungeon Exit",
-    "Main Hall Floor 1"
-    "Main Hall floor 2"
-    "Main Hall floor 3"
-    "Guarded doors"
-    "Throne room"
+    "Main Hall Floor 1",
+    "Main Hall Floor 2",
+    "Main Hall Floor 3",
+    "Guarded Doors",
+    "Throne Room",
+    "Royal Antechamber",
+    "The King's Treasury",
+    "Forgotten Library",
+    "The Final Guardian",
+    "The Inner Sanctum"
 ]
-
-
 
 HIGH_SCORE_FILE = Path("high_score.json")
 
 
+# Save the all-time high score
+def save_high_score(score):
+    try:
+        with HIGH_SCORE_FILE.open("w", encoding="utf-8") as file:
+            json.dump({"high_score": score}, file, indent=4)
+        return True
+    except OSError:
+        print("Unable to save high score.")
+        return False
+
+
+# Load the all-time high score
 def load_high_score():
     try:
         with HIGH_SCORE_FILE.open("r", encoding="utf-8") as file:
             data = json.load(file)
+
+        if not isinstance(data, dict):
+            print("Invalid high score data. Starting at zero.")
+            return 0
 
         score = data.get("high_score", 0)
 
         if type(score) is int and score >= 0:
             return score
 
+        print("Invalid high score data. Starting at zero.")
         return 0
 
-    except (FileNotFoundError, json.JSONDecodeError, OSError):
+    except FileNotFoundError:
+        save_high_score(0)
         return 0
-
-
-def save_high_score(score):
-    try:
-        with HIGH_SCORE_FILE.open("w", encoding="utf-8") as file:
-            json.dump({"high_score": score}, file, indent=4)
-
-        return True
-
-    except OSError:
-        print("Unable to save high score.")
-        return False
+    except (json.JSONDecodeError, OSError):
+        print("Unable to load high score. Starting at zero.")
+        return 0
 
 
 high_score = load_high_score()
 
 
+# Display inventory and score information
 def show_inventory():
     print("\n₊˚ ✧ ━━━━⊱ Inventory ⊰━━━━ ✧ ₊˚")
     print(f"Session gold: {current_gold}")
@@ -65,6 +76,7 @@ def show_inventory():
     print(f"All-time high score: {high_score}")
 
 
+# Cash out and save the score if it beats the record
 def cash_out():
     global high_score, game_over
 
@@ -82,202 +94,192 @@ def cash_out():
 
         if confirm in ("y", "yes"):
             break
-
         elif confirm in ("n", "no"):
             print("Cash out cancelled. Keep exploring!")
             return
-
         else:
             print("Please enter y or n.")
 
-    
     if current_gold > high_score:
         if save_high_score(current_gold):
             high_score = current_gold
             print("Congratulations! New all-time high score!")
         else:
             print("Your score could not be saved.")
-
     else:
         print(f"Your best score remains {high_score} gold.")
 
     game_over = True
+
     print(f"Final score: {current_gold} gold.")
     print("Your dungeon run has ended.")
 
 
-
+# Combat system
 def combat():
     global current_gold
-
-    print("\n₊˚ ✧ ━━━━⊱ Combat ⊰━━━━ ✧ ₊˚")
-    print("1. Attack (+3 to your roll)")
-    print("2. Defend (-5 to enemy roll)")
-
-  
-    while True:
-        action = input("Choose your action (1 or 2): ")
-
-        if action == "1" or action == "2":
-            break
-
-        else:
-            print("Invalid choice! Please enter 1 or 2.")
 
     player_roll = random.randint(1, 20)
     enemy_roll = random.randint(1, 20)
 
-   
-    if action == "1":
-        player_roll += 3
-        print("You attacked! Your roll is increased by 3.")
+    print("\nAn enemy appears!")
+    print("Choose your action:")
+    print("1. Attack (+3 to your roll)")
+    print("2. Defend (-5 to the enemy's roll)")
 
-    # Defend reduces the enemy's roll by 5
-    elif action == "2":
+    while True:
+        choice = input("Enter 1 or 2: ").strip()
+
+        if choice in ("1", "2"):
+            break
+
+        print("Invalid choice. Please enter 1 or 2.")
+
+    if choice == "1":
+        player_roll += 3
+        print("You attack! Your roll increases by 3.")
+    else:
         enemy_roll = max(1, enemy_roll - 5)
-        print("You defended! Enemy roll reduced by 5.")
+        print("You defend! The enemy's roll decreases by 5.")
 
     print(f"Your final roll: {player_roll}")
-    print(f"Enemy final roll: {enemy_roll}")
+    print(f"Enemy's final roll: {enemy_roll}")
 
     if player_roll > enemy_roll:
-        print("You won the fight!")
+        print("You defeated the enemy!")
         current_gold += 10
-        print("You earned 10 gold!")
+        print(f"You earned 10 gold! Current gold: {current_gold}")
+        return True
 
     elif player_roll < enemy_roll:
-        print("You lost the fight! Game Over.")
+        print("You were defeated!")
+        print("You lose all your session gold.")
         current_gold = 0
         return False
 
     else:
-        print("It's a draw! No gold awarded.")
+        print("It's a draw! No gold earned.")
+        print(f"Current gold: {current_gold}")
+        return True
 
-    print(f"Current gold: {current_gold}")
-    return True
+
+# Randomly select a combat, treasure, or safe room
+def random_room():
+    global current_gold
+
+    encounter = random.choices(
+        ["combat", "treasure", "safe"],
+        weights=[70, 10, 20],
+        k=1
+    )[0]
+
+    if encounter == "combat":
+        print("\nYou encountered a Combat Room!")
+        print("An enemy blocks your path!")
+        return combat()
+
+    elif encounter == "treasure":
+        treasure_gold = random.randint(10, 30)
+
+        print("\n₊˚ ✧ ━━━━⊱ Treasure Room ⊰━━━━ ✧ ₊˚")
+        print("You discovered a hidden treasure chest!")
+        print(f"You found {treasure_gold} gold!")
+
+        current_gold += treasure_gold
+
+        print(f"Current gold: {current_gold}")
+        return True
+
+    else:
+        print("\n₊˚ ✧ ━━━━⊱ Safe Room ⊰━━━━ ✧ ₊˚")
+        print("You found a peaceful room.")
+        print("There are no enemies here. Take a rest!")
+        print(f"Current gold: {current_gold}")
+        return True
 
 
+# Enter the next room
 def next_room():
     global rooms_cleared, game_over
 
     if game_over:
-        print("\nYour run has ended. Start a new run to continue.")
+        print("\nYour run has ended. Cash out or quit.")
         return
 
     if rooms_cleared < len(rooms):
         print(f"\nYou entered {rooms[rooms_cleared]}!")
 
-        
-        if combat():
+        if random_room():
             rooms_cleared += 1
             print(f"Rooms cleared: {rooms_cleared}")
 
-            # Force a valid direction
-            while True:
-                direction = input(
-                    "Which direction did you go? "
-                    "(1 = left, 2 = right, 3 = straight): "
-                ).lower().strip()
-
-                if direction == "1" or direction == "left":
-                    directions.append("left")
-                    break
-
-                elif direction == "2" or direction == "right":
-                    directions.append("right")
-                    break
-
-                elif direction == "3" or direction == "straight":
-                    directions.append("straight")
-                    break
-
-                else:
-                    print(
-                        "Invalid direction! Enter 1, 2, 3, "
-                        "left, right, or straight."
-                    )
+            if rooms_cleared == len(rooms):
+                print("\nYou have cleared every room!")
+                print("You can now cash out your gold from the main menu.")
 
         else:
             game_over = True
-            print("Your dungeon run has ended.")
+            print("\nYour dungeon run has ended.")
             print(f"Final rooms cleared: {rooms_cleared}")
-            print(f"Gold lost: {current_gold}")
+            print("Your session gold was lost.")
             print("Returning to the main menu...")
 
     else:
         print("\nYou have cleared the dungeon!")
+        print("You can cash out your gold from the main menu.")
 
 
-def show_direction_map():
-    print("\n₊˚ ✧ ━━━━⊱ Direction Map ⊰━━━━ ✧ ₊˚")
-
-    if len(directions) == 0:
-        print("No rooms explored yet.")
-
-    else:
-        print("Entrance", end="")
-
-        for direction in directions:
-            print(f" --> {direction}", end="")
-
-        print()
-
-
+# Display the dungeon room map
 def show_room_map():
     print("\n₊˚ ✧ ━━━━⊱ Dungeon Map ⊰━━━━ ✧ ₊˚")
 
-    for i in range(len(rooms)):
+    for i, room in enumerate(rooms):
         if i < rooms_cleared:
-            print(f"[X] {rooms[i]}")
-
-        elif i == rooms_cleared:
-            print(f"[>] {rooms[i]}")
-
+            marker = "[X]"
+        elif i == rooms_cleared and not game_over:
+            marker = "[>]"
         else:
-            print(f"[ ] {rooms[i]}")
+            marker = "[ ]"
+
+        print(f"{marker} {room}")
 
         if i < len(rooms) - 1:
-            print("     ↓")
+            print("    |")
 
 
-# Main Menu
-while True:
-    print("\n₊˚ ✧ ━━━━⊱ Dungeon Menu ⊰━━━━ ✧ ₊˚")
-    print("1. Enter Next Room")
-    print("2. Show Map")
-    print("3. Inventory")
-    print("4. Cash Out & Save Score")
-    print("5. Quit")
+# Main menu
+def main():
+    print("₊˚ ✧ ━━━━⊱ Dungeon Adventure ⊰━━━━ ✧ ₊˚")
 
-    choice = input("Choose: ").strip()
-
-    if choice == "1":
-        next_room()
-
-    elif choice == "2":
-        print("\n1. Direction Map")
+    while True:
+        print("\n========== MAIN MENU ==========")
+        print("1. Enter Next Room")
         print("2. Dungeon Map")
+        print("3. Inventory")
+        print("4. Cash Out & Save Score")
+        print("5. Quit")
 
-        map_choice = input("Choose map: ").strip()
+        choice = input("Choose an option: ").strip()
 
-        if map_choice == "1":
-            show_direction_map()
+        if choice == "1":
+            next_room()
 
-        elif map_choice == "2":
+        elif choice == "2":
             show_room_map()
 
+        elif choice == "3":
+            show_inventory()
+
+        elif choice == "4":
+            cash_out()
+
+        elif choice == "5":
+            print("Thanks for playing!")
+            break
+
         else:
-            print("Invalid map choice.")
+            print("Invalid choice. Please enter a number from 1 to 5.")
 
-    elif choice == "3":
-        show_inventory()
 
-    elif choice == "4":
-        cash_out()
-
-    elif choice == "5":
-        print("Returning to main menu...")
-        break
-
-    else:
-        print("Invalid choice. Please enter 1, 2, 3, 4, or 5.")
+if __name__ == "__main__":
+    main()

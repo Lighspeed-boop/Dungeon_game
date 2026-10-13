@@ -1,0 +1,1 @@
+This Program does insert a JSON file onto the computer, within the same folder as the .py file is located. It is purley used for keeping track of the high score, however the code will not run without it.

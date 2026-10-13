@@ -73,6 +73,52 @@ def show_inventory():
     print(f"All-time high score: {high_score}")
 
 
+def show_file_location():
+    print("\n₊˚ ✧ ━━━━⊱ File Location ⊰━━━━ ✧ ₊˚")
+    print(f"High score file: {HIGH_SCORE_FILE.resolve()}")
+
+    if HIGH_SCORE_FILE.exists():
+        print("File status: Exists")
+    else:
+        print("File status: Does not currently exist")
+
+
+def delete_high_score_file():
+    global high_score
+
+    print("\n₊˚ ✧ ━━━━⊱ Delete High Score ⊰━━━━ ✧ ₊˚")
+    print(f"File: {HIGH_SCORE_FILE.resolve()}")
+    print(f"Current all-time high score: {high_score}")
+
+    if not HIGH_SCORE_FILE.exists():
+        print("The high score file does not exist.")
+        high_score = 0
+        return
+
+    while True:
+        confirm = input(
+            "Are you sure you want to delete the high score file? (y/n): "
+        ).strip().lower()
+
+        if confirm in ("y", "yes"):
+            break
+        elif confirm in ("n", "no"):
+            print("Deletion cancelled. Your high score is safe!")
+            return
+        else:
+            print("Please enter y or n.")
+
+    try:
+        HIGH_SCORE_FILE.unlink()
+        high_score = 0
+
+        print("High score file deleted successfully!")
+        print("Your all-time high score has been reset to 0.")
+
+    except OSError as error:
+        print(f"Unable to delete the file: {error}")
+
+
 def show_room_map(outcome=None):
     print("\n₊˚ ✧ ━━━━⊱ Dungeon Map ⊰━━━━ ✧ ₊˚")
     print("[X] = Cleared | [>] = Current | [!] = Defeat | [ ] = Unexplored")
@@ -135,7 +181,6 @@ def game_over_screen(outcome):
         print(f"Rooms cleared: {rooms_cleared}/{len(rooms)}")
         print(f"Final score: {final_score} gold")
 
-    # Update the all-time high score after a successful cash-out or victory.
     if outcome in ("victory", "cashout"):
         if final_score > high_score:
             if save_high_score(final_score):
@@ -151,7 +196,6 @@ def game_over_screen(outcome):
 
     else:
         print(f"All-time high score: {high_score} gold")
-
 
     if outcome in ("victory", "defeat"):
         show_room_map(outcome)
@@ -171,7 +215,6 @@ def game_over_screen(outcome):
             return
 
         elif choice == "2":
-            # Reset the ended run so the player can start again from the menu.
             reset_run()
             print("Returning to the main menu...")
             return
@@ -210,6 +253,7 @@ def cash_out():
 
 def combat():
     global current_gold, last_run_gold
+
     player_roll = random.randint(1, 20)
     enemy_roll = random.randint(1, 20)
 
@@ -322,6 +366,8 @@ def main():
         print("3. Inventory")
         print("4. Cash Out & Save Score")
         print("5. Quit")
+        print("6. Show High Score File Location")
+        print("7. Delete High Score File")
 
         choice = input("Choose an option: ").strip()
 
@@ -341,7 +387,15 @@ def main():
             print("Thanks for playing!")
             break
 
+        elif choice == "6":
+            show_file_location()
+
+        elif choice == "7":
+            delete_high_score_file()
+
         else:
-            print("Invalid choice. Please enter a number from 1 to 5.")
+            print("Invalid choice. Please enter a number from 1 to 7.")
+
+
 if __name__ == "__main__":
     main()

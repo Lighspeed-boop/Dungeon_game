@@ -152,7 +152,7 @@ def game_over_screen(outcome):
     else:
         print(f"All-time high score: {high_score} gold")
 
-    # Display the dungeon map on victory and defeat screens.
+
     if outcome in ("victory", "defeat"):
         show_room_map(outcome)
 
@@ -210,7 +210,6 @@ def cash_out():
 
 def combat():
     global current_gold, last_run_gold
-
     player_roll = random.randint(1, 20)
     enemy_roll = random.randint(1, 20)
 
@@ -344,7 +343,5 @@ def main():
 
         else:
             print("Invalid choice. Please enter a number from 1 to 5.")
-
-
 if __name__ == "__main__":
     main()
